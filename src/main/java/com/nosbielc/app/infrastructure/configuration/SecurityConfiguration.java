@@ -8,6 +8,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -19,6 +20,7 @@ import static com.nosbielc.app.infrastructure.shared.constants.PathsConstants.PA
 import static com.nosbielc.app.infrastructure.shared.user.Permission.*;
 import static com.nosbielc.app.infrastructure.shared.user.Role.ADMIN;
 import static com.nosbielc.app.infrastructure.shared.user.Role.MANAGER;
+import static org.springframework.boot.autoconfigure.security.servlet.PathRequest.toH2Console;
 import static org.springframework.http.HttpMethod.*;
 
 @Configuration
@@ -37,6 +39,7 @@ public class SecurityConfiguration {
         return http.authorizeHttpRequests(authorize -> {
 
             authorize.requestMatchers("/api/v1/auth/**",
+                    "/api/v1/demo-controller/**",
                     "/v2/api-docs",
                     "/v3/api-docs",
                         "/v3/api-docs/**",
@@ -48,6 +51,8 @@ public class SecurityConfiguration {
                         "/webjars/**",
                         "/swagger-ui.html").permitAll();
 
+//            authorize.requestMatchers(toH2Console()).permitAll();
+
             authorize.requestMatchers(PATH_ADMIN+ "**").hasRole(ADMIN.name());
             authorize.requestMatchers(PATH_MANAGEMENT+ "**").hasAnyRole(ADMIN.name(), MANAGER.name());
 
@@ -56,8 +61,10 @@ public class SecurityConfiguration {
             authorize.requestMatchers(PUT, PATH_MANAGEMENT+ "**").hasAnyAuthority(ADMIN_UPDATE.name(), MANAGER_UPDATE.name());
             authorize.requestMatchers(DELETE, PATH_MANAGEMENT+ "**").hasAnyAuthority(ADMIN_DELETE.name(), MANAGER_DELETE.name());
 
-
+            authorize.anyRequest().authenticated();
         })
+                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin))
+//                .csrf(protection -> protection.ignoringRequestMatchers(toH2Console())) // try access for h2 Console return error, please not use this line
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authenticationProvider(authenticationProvider)
